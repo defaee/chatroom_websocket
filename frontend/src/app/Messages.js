@@ -3,6 +3,7 @@
 import { IoSendSharp } from "react-icons/io5";
 import { FaCheck } from "react-icons/fa";
 import { useEffect, useRef, useState } from "react";
+import { io } from "socket.io-client";
 
 const Messages = () => {
   const [naming, setNaming] = useState("");
@@ -10,22 +11,25 @@ const Messages = () => {
   const [msg, setMsg] = useState("");
   const [chats, setChats] = useState([]);
 
-  const ws = useRef(null);
+  const socket = io("http://localhost:9000");
 
   useEffect(() => {
-    ws.current = new WebSocket("ws:localhost:9000");
-
-    ws.current.addEventListener("open", () => {
-      ws.current.addEventListener("message", ({ data }) => {
-        const { msg, name } = JSON.parse(data);
-        setChats((prevChats) => [...prevChats, { name, msg }]);
-      });
+    socket.on("response", ({ name, msg }) => {
+      setChats((prevChats) => [...prevChats, { name, msg }]);
     });
 
     return () => {
-      ws.current.close();
+      socket.disconnect();
     };
   }, []);
+
+  const handleMSG = () => {
+    if (!(msg.length >= 1)) {
+      return false;
+    }
+    socket.emit("msg", { name, msg });
+    setMsg("");
+  };
 
   const handleName = () => {
     if (!(naming.length >= 3)) {
@@ -33,14 +37,6 @@ const Messages = () => {
     }
     setName(naming);
     setNaming("");
-  };
-
-  const handleMSG = () => {
-    if (!(msg.length >= 1)) {
-      return false;
-    }
-    ws.current.send(JSON.stringify({ msg, name }));
-    setMsg("");
   };
 
   const handleNamingKeydown = (e) => {

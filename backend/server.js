@@ -1,19 +1,20 @@
 const http = require("http");
-const WebSocket = require("ws");
+const { Server } = require("socket.io");
 
 const server = http.createServer();
 
-const ws = new WebSocket.Server({ server });
+// const ws = new WebSocket.Server({ server });
+const io = new Server(server, {
+  cors: {
+    origin: "*",
+  },
+});
 
-ws.on("connection", (socket) => {
-  console.log("runned");
+io.on("connection", (socket) => {
+  socket.on("msg", (data) => {
+    const { msg, name } = data;
 
-  socket.on("message", (data) => {
-    console.log("msg", data.toString());
-
-    ws.clients.forEach((client) => {
-      client.send(data.toString());
-    });
+    io.emit("response", { msg, name });
   });
 });
 
